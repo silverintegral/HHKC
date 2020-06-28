@@ -1,16 +1,19 @@
-﻿using System; 
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
+﻿/*
+ * Happy Hacking Keycode
+ * Copyright (c) 2020 silverintegral
+ * Released under the MIT license.
+ * see https://opensource.org/licenses/MIT
+ */
+
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.Threading;
-using System.IO;
 
 
 namespace hhkc
@@ -530,6 +533,7 @@ namespace hhkc
 
 			if (ModStat > 0)
 			{
+				// ファンクション簡単入力
 				if (e.KeyCode >= VK_1 && e.KeyCode <= VK_9)
 				{
 					// F1-F9
@@ -558,7 +562,9 @@ namespace hhkc
 					ModStat = 2;
 					return false;
 				}
-				else if (e.KeyCode == VK_A)
+
+				// 数字簡単入力
+				if (e.KeyCode == VK_A)
 				{
 					// 1
 					KeyInput.KeyDown(VK_1);
@@ -635,7 +641,6 @@ namespace hhkc
 					ModStat = 2;
 					return false;
 				}
-
 
 				// プログラム実行
 				if (e.KeyCode == VK_Z)
@@ -718,7 +723,6 @@ namespace hhkc
 					ModStat = 2;
 					return false;
 				}
-
 
 				// マクロ記録
 				if (e.KeyCode == VK_ESCAPE)
@@ -823,7 +827,8 @@ namespace hhkc
 				ModStat = 2;
 			}
 
-			// POWERボタンの有効化
+			// POWERボタンの有効利用
+			// (Macintoshモードのみ)
 			if (e.KeyCode == VK_POWER)
 			{
 				if (ShiftDown > 0)
@@ -1397,18 +1402,15 @@ namespace hhkc
 					KeyInput.KeyUp(VK_DECIMAL);
 					return false;
 				}
+
 				/*
-				// モニターOFF
 				if (e.KeyCode == VK_OEM_5) // \
 				{
-					SystemCtrl.MonitorOff();
 					return false;
 				}
 
-				// サスペンド
 				if (e.KeyCode == VK_OEM_3) // `
 				{
-					SystemCtrl.Suspend();
 					return false;
 				}
 				*/
