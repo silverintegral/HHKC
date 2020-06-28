@@ -1,2 +1,2 @@
-# hhkc
+# HHKC
 HHKB用ユーティリティ
