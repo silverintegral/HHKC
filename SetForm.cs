@@ -1308,7 +1308,7 @@ namespace hhkc
 
 			try
 			{
-				foreach (String macro in MacroData)
+				foreach (String macro in GlobalMacroData)
 				{
 					sw.Write(macro + "\n");
 				}
@@ -1405,12 +1405,16 @@ namespace hhkc
 
 		public void Add(int Slot, String Data, bool Global = false)
 		{
-			MacroData[Slot] = Data;
-
 			if (Global)
+			{
+				GlobalMacroData[Slot] = Data;
 				GlobalSave();
+			}
 			else
+			{
+				MacroData[Slot] = Data;
 				Save();
+			}
 		}
 
 
