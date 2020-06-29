@@ -10,11 +10,13 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Text.RegularExpressions;
 
 namespace hhkc
 {
@@ -115,6 +117,7 @@ namespace hhkc
 		HookKey HookKey = null;
 		static InputKey KeyInput = null;
 		static int ModStat = 0;
+		static MacroSys Macro = null;
 
 		static int CtrlDown = 0;
 		static int ShiftDown = 0;
@@ -157,7 +160,6 @@ namespace hhkc
 			InitializeComponent();
 			InitTrayIcon();
 			Hide();
-			LoadMacro();
 			LoadApp();
 
 			HookKey = new HookKey();
@@ -166,6 +168,7 @@ namespace hhkc
 			HookKey.Hook();
 
 			KeyInput = new InputKey();
+			Macro = new MacroSys();
 		}
 
 
@@ -251,64 +254,6 @@ namespace hhkc
 		}
 
 
-		private static void SaveMacro()
-		{
-			System.IO.DirectoryInfo pdir = System.IO.Directory.GetParent(Application.UserAppDataPath);
-			StreamWriter sw = new StreamWriter(pdir.FullName + @"\macro.conf", false, Encoding.ASCII);
-
-			try
-			{
-				sw.Write(string.Join(",", MacroQ) + "\n");
-				sw.Write(string.Join(",", MacroW) + "\n");
-				sw.Write(string.Join(",", MacroE) + "\n");
-				sw.Write(string.Join(",", MacroR) + "\n");
-				sw.Write(string.Join(",", MacroT) + "\n");
-				sw.Write(string.Join(",", MacroY) + "\n");
-				sw.Write(string.Join(",", MacroU) + "\n");
-				sw.Write(string.Join(",", MacroI) + "\n");
-				sw.Write(string.Join(",", MacroO) + "\n");
-				sw.Write(string.Join(",", MacroP) + "\n");
-				sw.Write(string.Join(",", Macro1) + "\n");
-				sw.Write(string.Join(",", Macro2) + "\n");
-			}
-			finally
-			{
-				sw.Close();
-			}
-		}
-
-
-		private static void LoadMacro()
-		{
-			System.IO.DirectoryInfo pdir = System.IO.Directory.GetParent(Application.UserAppDataPath);
-
-			if (!File.Exists(pdir.FullName + @"\macro.conf"))
-				return;
-
-			StreamReader sr = new StreamReader(pdir.FullName + @"\macro.conf");
-
-			try
-			{
-				MacroQ = sr.ReadLine().Split(',');
-				MacroW = sr.ReadLine().Split(',');
-				MacroE = sr.ReadLine().Split(',');
-				MacroR = sr.ReadLine().Split(',');
-				MacroT = sr.ReadLine().Split(',');
-				MacroY = sr.ReadLine().Split(',');
-				MacroU = sr.ReadLine().Split(',');
-				MacroI = sr.ReadLine().Split(',');
-				MacroO = sr.ReadLine().Split(',');
-				MacroP = sr.ReadLine().Split(',');
-				Macro1 = sr.ReadLine().Split(',');
-				Macro2 = sr.ReadLine().Split(',');
-			}
-			finally
-			{
-				sr.Close();
-			}
-		}
-
-
 		private static void SaveApp()
 		{
 			System.IO.DirectoryInfo pdir = System.IO.Directory.GetParent(Application.UserAppDataPath);
@@ -363,6 +308,10 @@ namespace hhkc
 		}
 
 
+		[DllImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		private static extern bool SetForegroundWindow(IntPtr hWnd);
+
 		private static void EditLauncher(ref String AppPath)
 		{
 			if (CtrlDown > 0)
@@ -407,6 +356,21 @@ namespace hhkc
 
 				};
 
+				var task = Task.Run(() =>
+				{
+					//ウィンドウをアクティブにする
+					Thread.Sleep(500);
+
+					foreach (System.Diagnostics.Process p in System.Diagnostics.Process.GetProcesses())
+					{
+						if (p.MainWindowTitle.IndexOf("フォルダーの参照") >= 0)
+						{
+							SetForegroundWindow(p.MainWindowHandle);
+							break;
+						}
+					}
+				});
+				 
 				if (Dlg.ShowDialog() == DialogResult.OK)
 				{
 					AppPath = Dlg.FileName;
@@ -427,7 +391,7 @@ namespace hhkc
 			//string log = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " Keydown " + e.KeyCode + Environment.NewLine;
 			//System.IO.File.AppendAllText("D:/log.txt", log);
 
-			if (e.KeyCode == VK_LCONTROL)
+			if (e.KeyCode == VK_LCONTROL) 
 				CtrlDown |= 1;
 
 			if (e.KeyCode == VK_RCONTROL)
@@ -451,6 +415,8 @@ namespace hhkc
 			if (e.KeyCode == VK_RWIN)
 				WinDown |= 2;
 
+			//if (e.KeyCode == VK_LBUTTON)
+			//	SetForm.ShowToast("kurikku");
 
 			if (MacroStat > 0)
 			{
@@ -477,76 +443,151 @@ namespace hhkc
 				else if (MacroStat == 3)
 				{
 					// マクロ記録終了（場所選択）
-					if (e.KeyCode == VK_Q)
+					if (CtrlDown > 0)
 					{
-						MacroQ = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
+						if (e.KeyCode == VK_Q)
+						{
+							Macro.Del(0, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_W)
+						{
+							Macro.Del(1, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_E)
+						{
+							Macro.Del(2, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_R)
+						{
+							Macro.Del(3, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_T)
+						{
+							Macro.Del(4, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_Y)
+						{
+							Macro.Del(5, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_U)
+						{
+							Macro.Del(6, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_I)
+						{
+							Macro.Del(7, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_O)
+						{
+							Macro.Del(8, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_P)
+						{
+							Macro.Del(9, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_OEM_4) // [
+						{
+							Macro.Del(10, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_OEM_6) // ]
+						{
+							Macro.Del(11, ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+
+						if (MacroStat == 4)
+						{
+							ShowToast("マクロの削除が完了しました");
+							MacroStat = 0;
+							ModStat = 0;
+
+							return false;
+						}
 					}
-					else if (e.KeyCode == VK_W)
+					else
 					{
-						MacroW = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_E)
-					{
-						MacroE = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_R)
-					{
-						MacroR = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_T)
-					{
-						MacroT = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_Y)
-					{
-						MacroY = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_U)
-					{
-						MacroU = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_I)
-					{
-						MacroI = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_O)
-					{
-						MacroO = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_P)
-					{
-						MacroP = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_OEM_4) // [
-					{
-						Macro1 = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
-					}
-					else if (e.KeyCode == VK_OEM_6) // ]
-					{
-						Macro2 = MacroStr.Trim(',').Split(',');
-						MacroStat = 4;
+						if (e.KeyCode == VK_Q)
+						{
+							Macro.Add(0, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_W)
+						{
+							Macro.Add(1, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_E)
+						{
+							Macro.Add(2, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_R)
+						{
+							Macro.Add(3, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_T)
+						{
+							Macro.Add(4, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_Y)
+						{
+							Macro.Add(5, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_U)
+						{
+							Macro.Add(6, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_I)
+						{
+							Macro.Add(7, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_O)
+						{
+							Macro.Add(8, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_P)
+						{
+							Macro.Add(9, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_OEM_4) // [
+						{
+							Macro.Add(10, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+						else if (e.KeyCode == VK_OEM_6) // ]
+						{
+							Macro.Add(11, MacroStr.Trim(','), ShiftDown > 0 ? true : false);
+							MacroStat = 4;
+						}
+
+						if (MacroStat == 4)
+						{
+							ShowToast("マクロ登録が完了しました");
+							MacroStat = 0;
+							ModStat = 0;
+
+							return false;
+						}
 					}
 
-					if (MacroStat == 4)
-					{
-						ShowToast("マクロ登録が完了しました");
-						MacroStat = 0;
-						ModStat = 0;
-						SaveMacro();
-						return false;
-					}
-					
 					if (e.KeyCode == VK_ESCAPE)
 					{
 						ShowToast("マクロ登録をキャンセルしました");
@@ -804,92 +845,98 @@ namespace hhkc
 				// マクロ再生
 				if (e.KeyCode == VK_Q)
 				{
-					MacroExec = MacroQ;
-					MacroStat = 9;
+					Macro.Exec(0);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_W)
 				{
-					MacroExec = MacroW;
-					MacroStat = 9;
+					Macro.Exec(1);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_E)
 				{
-					MacroExec = MacroE;
-					MacroStat = 9;
+					Macro.Exec(2);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_R)
 				{
-					MacroExec = MacroR;
-					MacroStat = 9;
+					Macro.Exec(3);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_T)
 				{
-					MacroExec = MacroT;
-					MacroStat = 9;
+					Macro.Exec(4);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_Y)
 				{
-					MacroExec = MacroY;
-					MacroStat = 9;
+					Macro.Exec(5);
+					MacroStat = 0;
+					ModStat = 2;
+	
+					return false;
 				}
 				else if (e.KeyCode == VK_U)
 				{
-					MacroExec = MacroU;
-					MacroStat = 9;
+					Macro.Exec(6);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_I)
 				{
-					MacroExec = MacroI;
-					MacroStat = 9;
+					Macro.Exec(7);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_O)
 				{
-					MacroExec = MacroO;
-					MacroStat = 9;
+					Macro.Exec(8);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_P)
 				{
-					MacroExec = MacroP;
-					MacroStat = 9;
+					Macro.Exec(9);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_OEM_4)
 				{
-					MacroExec = Macro1;
-					MacroStat = 9;
+					Macro.Exec(10);
+					MacroStat = 0;
+					ModStat = 2;
+
+					return false;
 				}
 				else if (e.KeyCode == VK_OEM_6)
 				{
-					MacroExec = Macro2;
-					MacroStat = 9;
-				}
-
-				if (MacroStat == 9)
-				{
-					foreach (String strkey in MacroExec)
-					{
-						if (strkey.Length == 0)
-							continue;
-
-						int key = Int32.Parse(strkey);
-						if (key > 2000)
-						{
-							key -= 2000;
-							KeyInput.KeyUp(key);
-						}
-						else if (key > 1000)
-						{
-							key -= 1000;
-							KeyInput.KeyDown(key);
-						}
-						else
-						{
-							KeyInput.KeyDown(key);
-							KeyInput.KeyUp(key);
-						}
-					}
-
+					Macro.Exec(11);
 					MacroStat = 0;
 					ModStat = 2;
+
 					return false;
 				}
 
@@ -1210,6 +1257,203 @@ namespace hhkc
 	}
 
 
+	public class MacroSys
+	{
+		#region Win32 Methods
+		[DllImport("user32.dll")]
+		private static extern IntPtr GetForegroundWindow();
+		[DllImport("user32.dll", SetLastError = true)]
+		private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+		[DllImport("kernel32.dll")]
+		private static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+		[DllImport("kernel32.dll")]
+		private static extern bool CloseHandle(IntPtr handle);
+		[DllImport("psapi.dll", CharSet = CharSet.Ansi)]
+		private static extern uint GetModuleFileNameEx(IntPtr hWnd, IntPtr hModule, [MarshalAs(UnmanagedType.LPStr), Out] StringBuilder lpBaseName, uint nSize);
+		#endregion
+
+
+		String[] GlobalMacroData = new String[12];
+		String[] MacroData = new String[12];
+		String LastMacroSetName = "";
+		static InputKey KeyInput = null;
+
+
+		public MacroSys()
+		{
+			KeyInput = new InputKey();
+			GlobalLoad();
+		}
+
+
+		public static String GetActiveProcName()
+		{
+			//return "test.exe";
+
+			IntPtr hwnd = GetForegroundWindow();
+			GetWindowThreadProcessId(hwnd, out uint pid);
+			IntPtr hproc = OpenProcess(0x0410, false, pid);
+			var basename = new StringBuilder(512);
+			GetModuleFileNameEx(hproc, IntPtr.Zero, basename, (uint)basename.Capacity);
+			CloseHandle(hproc);
+
+			return basename.ToString();
+		}
+
+
+		public void GlobalSave()
+		{
+			DirectoryInfo pdir = Directory.GetParent(Application.UserAppDataPath);
+			StreamWriter sw = new StreamWriter(pdir.FullName + "\\macro-global.conf", false, Encoding.ASCII);
+
+			try
+			{
+				foreach (String macro in MacroData)
+				{
+					sw.Write(macro + "\n");
+				}
+			}
+			finally
+			{
+				sw.Close();
+			}
+		}
+
+
+		private void GlobalLoad()
+		{
+			DirectoryInfo pdir = Directory.GetParent(Application.UserAppDataPath);
+
+			if (!File.Exists(pdir.FullName + "\\macro-global.conf"))
+				return;
+
+			StreamReader sr = new StreamReader(pdir.FullName + "\\macro-global.conf");
+
+			try
+			{
+				for (int i = 0; i <= 11; i++)
+				{
+					GlobalMacroData[i] = sr.ReadLine();
+				}
+			}
+			finally
+			{
+				sr.Close();
+			}
+		}
+
+
+		public void Save(String SetName = "")
+		{
+			if (SetName.Length == 0)
+			{
+				SetName = GetActiveProcName().ToLower().Replace(" ", "").Replace(":\\", "_").Replace("\\", "_");
+			}
+
+			DirectoryInfo pdir = Directory.GetParent(Application.UserAppDataPath);
+			StreamWriter sw = new StreamWriter(pdir.FullName + "\\macro-" + SetName + ".conf", false, Encoding.ASCII);
+
+			try
+			{
+				foreach (String macro in MacroData)
+				{
+					sw.Write(macro + "\n");
+				}
+			}
+			finally
+			{
+				sw.Close();
+			}
+		}
+
+
+		private void Load(String SetName = "")
+		{
+			if (SetName == null || SetName.Length == 0)
+			{
+				SetName = GetActiveProcName().ToLower().Replace(" ", "").Replace(":\\", "_").Replace("\\", "_");
+			}
+
+			if (SetName == LastMacroSetName)
+				return;
+
+			DirectoryInfo pdir = Directory.GetParent(Application.UserAppDataPath);
+
+			if (!File.Exists(pdir.FullName + "\\macro-" + SetName + ".conf"))
+				return;
+
+			StreamReader sr = new StreamReader(pdir.FullName + "\\macro-" + SetName + ".conf");
+
+			try
+			{
+				for (int i = 0; i <= 11; i++)
+				{
+					MacroData[i] = sr.ReadLine();
+
+					if (MacroData[i] == "")
+						MacroData[i] = GlobalMacroData[i];
+				}
+			}
+			finally
+			{
+				sr.Close();
+			}
+
+			LastMacroSetName = SetName;
+		}
+
+
+		public void Add(int Slot, String Data, bool Global = false)
+		{
+			MacroData[Slot] = Data;
+
+			if (Global)
+				GlobalSave();
+			else
+				Save();
+		}
+
+
+		public void Del(int Slot, bool Global = false)
+		{
+			Add(Slot, "", Global);
+		}
+
+
+		public void Exec(int Slot)
+		{
+			Load();
+
+			if (MacroData[Slot] == null || MacroData[Slot].Length == 0)
+				return;
+
+			foreach (String strkey in MacroData[Slot].Split(','))
+			{
+				if (!Regex.IsMatch(strkey, "^[0-9]{1,4}$"))
+					continue;
+
+				int key = Int32.Parse(strkey);
+
+				if (key > 2000)
+				{
+					key -= 2000;
+					KeyInput.KeyUp(key);
+				}
+				else if (key > 1000)
+				{
+					key -= 1000;
+					KeyInput.KeyDown(key);
+				}
+				else
+				{
+					KeyInput.KeyDown(key);
+					KeyInput.KeyUp(key);
+				}
+			}
+		}
+	}
+
+
 	public class HookKey
 	{
 		#region Win32 Constants
@@ -1218,6 +1462,7 @@ namespace hhkc
 		protected const int WM_KEYUP = 0x0101;
 		protected const int WM_SYSKEYDOWN = 0x0104;
 		protected const int WM_SYSKEYUP = 0x0105;
+		protected const int WH_MOUSE_LL = 0x0004;
 		#endregion
 
 		#region Win32API Structures
@@ -1244,14 +1489,11 @@ namespace hhkc
 		#region Win32 Methods
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		private static extern IntPtr SetWindowsHookEx(int idHook, KeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
-
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		private static extern bool UnhookWindowsHookEx(IntPtr hhk);
-
 		[DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
-
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 		private static extern IntPtr GetModuleHandle(string lpModuleName);
 		#endregion
@@ -1310,23 +1552,24 @@ namespace hhkc
 
 		public IntPtr HookProcedure(int nCode, IntPtr wParam, IntPtr lParam)
 		{
-			if (nCode >= 0 && (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN))
+			if (nCode < 0)
+				return CallNextHookEx(hookId, nCode, wParam, lParam);
+
+			if (wParam == (IntPtr)WM_KEYDOWN || wParam == (IntPtr)WM_SYSKEYDOWN)
 			{
 				var kb = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
 				if ((int)(kb.dwExtraInfo) != 8088)
 				{
-					var vkCode = (int)kb.vkCode;
-					if (!OnKeyDownEvent(vkCode))
+					if (!OnKeyDownEvent((int)kb.vkCode))
 						return new IntPtr(1);
 				}
 			}
-			else if (nCode >= 0 && (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP))
+			else if (wParam == (IntPtr)WM_KEYUP || wParam == (IntPtr)WM_SYSKEYUP)
 			{
 				var kb = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
 				if ((int)(kb.dwExtraInfo) != 8088)
 				{
-					var vkCode = (int)kb.vkCode;
-					if (!OnKeyUpEvent(vkCode))
+					if (!OnKeyUpEvent((int)kb.vkCode))
 						return new IntPtr(1);
 				}
 			}
@@ -1448,18 +1691,13 @@ namespace hhkc
 
 		public static void MonitorOff()
 		{
-			//モニター停止
+			// モニター停止
 			SendMessage(-1, WM_SYSCOMMAND, SC_MONITORPOWER, 2);
-		}
-
-		public static void MonitorOn()
-		{
-			//モニター復帰
-			SendMessage(-1, WM_SYSCOMMAND, SC_MONITORPOWER, -1);
 		}
 
 		public static void Suspend()
 		{
+			// スリープ
 			Application.SetSuspendState(PowerState.Suspend, false, false);
 		}
 	}
