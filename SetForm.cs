@@ -14,7 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace hhkc
 {
@@ -363,6 +363,65 @@ namespace hhkc
 		}
 
 
+		private static void EditLauncher(ref String AppPath)
+		{
+			if (CtrlDown > 0)
+			{
+				ShowToast("ランチャー設定を削除しました");
+				AppPath = "";
+				SaveApp();
+			}
+			else if (ShiftDown > 0)
+			{
+				ShowToast("フォルダ登録");
+
+				FolderBrowserDialog Dlg = new FolderBrowserDialog()
+				{
+					Description = "フォルダの選択",
+					//SelectedPath = @"C:",
+					ShowNewFolderButton = true
+				};
+
+				if (Dlg.ShowDialog() == DialogResult.OK)
+				{
+					AppPath = Dlg.SelectedPath;
+					SaveApp();
+					ShowToast("フォルダ登録が完了しました");
+				}
+				else
+				{
+					ShowToast("フォルダ登録をキャンセルしました");
+				}
+
+				Dlg.Dispose();
+			}
+			else
+			{
+				ShowToast("アプリ登録");
+
+				OpenFileDialog Dlg = new OpenFileDialog()
+				{
+					InitialDirectory = @"C:",
+					Title = "アプリの選択",
+					CheckFileExists = true
+
+				};
+
+				if (Dlg.ShowDialog() == DialogResult.OK)
+				{
+					AppPath = Dlg.FileName;
+					SaveApp();
+					ShowToast("アプリ登録が完了しました");
+				}
+				else
+				{
+					ShowToast("アプリ登録をキャンセルしました");
+				}
+
+				Dlg.Dispose();
+			}
+		}
+
 		private static bool KeyDownEvent(object sender, HookKey.OriginalKeyEventArg e)
 		{
 			//string log = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " Keydown " + e.KeyCode + Environment.NewLine;
@@ -645,82 +704,92 @@ namespace hhkc
 				// プログラム実行
 				if (e.KeyCode == VK_Z)
 				{
+					ModStat = 2;
+
 					if (AppZ.Length > 0)
 						Process.Start(AppZ);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_X)
 				{
+					ModStat = 2;
+
 					if (AppX.Length > 0)
 						Process.Start(AppX);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_C)
 				{
+					ModStat = 2;
+
 					if (AppC.Length > 0)
 						Process.Start(AppC);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_V)
 				{
+					ModStat = 2;
+
 					if (AppV.Length > 0)
 						Process.Start(AppV);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_B)
 				{
+					ModStat = 2;
+
 					if (AppB.Length > 0)
 						Process.Start(AppB);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_N)
 				{
+					ModStat = 2;
+
 					if (AppN.Length > 0)
 						Process.Start(AppN);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_M)
 				{
+					ModStat = 2;
+
 					if (AppM.Length > 0)
 						Process.Start(AppM);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_OEM_COMMA)
 				{
+					ModStat = 2;
+
 					if (App1.Length > 0)
 						Process.Start(App1);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_OEM_PERIOD)
 				{
+					ModStat = 2;
+
 					if (App2.Length > 0)
 						Process.Start(App2);
 
-					ModStat = 2;
 					return false;
 				}
 				else if (e.KeyCode == VK_OEM_2)
 				{
+					ModStat = 2;
+
 					if (App3.Length > 0)
 						Process.Start(App3);
 
-					ModStat = 2;
 					return false;
 				}
 
@@ -894,35 +963,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppZ = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppZ = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppZ);
 
 						return false;
 					}
@@ -931,35 +972,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppX = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppX = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppX);
 
 						return false;
 					}
@@ -968,35 +981,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppC = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppC = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppC);
 
 						return false;
 					}
@@ -1005,35 +990,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppV = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppV = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppV);
 
 						return false;
 					}
@@ -1042,35 +999,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppB = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppB = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppB);
 
 						return false;
 					}
@@ -1079,35 +1008,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppN = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppN = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppN);
 
 						return false;
 					}
@@ -1116,35 +1017,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							AppM = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								AppM = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref AppM);
 
 						return false;
 					}
@@ -1153,35 +1026,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							App1 = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								App1 = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref App1);
 
 						return false;
 					}
@@ -1190,35 +1035,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							App2 = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								App2 = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref App2);
 
 						return false;
 					}
@@ -1227,35 +1044,7 @@ namespace hhkc
 						MacroStat = 0;
 						ModStat = 1;
 
-						if (ShiftDown > 0)
-						{
-							ShowToast("アプリを削除しました");
-							App3 = "";
-							SaveApp();
-						}
-						else
-						{
-							ShowToast("アプリ登録");
-
-							OpenFileDialog Dlg = new OpenFileDialog
-							{
-								InitialDirectory = @"C:",
-								Title = "アプリの登録"
-							};
-
-							if (Dlg.ShowDialog() == DialogResult.OK)
-							{
-								App3 = Dlg.FileName;
-								SaveApp();
-								ShowToast("アプリ登録が完了しました");
-							}
-							else
-							{
-								ShowToast("アプリ登録をキャンセルしました");
-							}
-
-							Dlg.Dispose();
-						}
+						EditLauncher(ref App3);
 
 						return false;
 					}
