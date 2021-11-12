@@ -1,4 +1,4 @@
-# Happy Hacking Keycode
+# Happy Hacking KeyCode for Windows
 HHKB用ユーティリティ
 
 ## 概要
